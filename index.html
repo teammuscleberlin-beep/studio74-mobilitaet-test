@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio74 Mobilitätstest</title>
+<style>
+/* VOICE: ruhig, Werkzeug im Studio | IDEA: Winkelmesser | PICTURE: große Live-Gradzahl mit Bogen
+   COLOUR/TYPE: Studio74 schwarz/gold, Sans | LAYOUT: eine Spalte, Handy zuerst */
+:root{--bg:#0d0d0d;--card:#1a1a1a;--line:#2e2e2e;--ink:#f2f2f2;--mute:#9a9a9a;--gold:#d4af37;--bad:#ff6b6b;--ok:#6fcf97}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:22px;margin:4px 0 2px;font-weight:600}h1 b{color:var(--gold)}
+h2{font-size:18px;margin:0 0 8px;font-weight:600}
+.sub{color:var(--mute);font-size:14px;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+button{font:inherit;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#222;color:var(--ink);padding:0 16px;cursor:pointer}
+button.main{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input[type=text]{width:100%;font:inherit;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#111;color:var(--ink);padding:0 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
+.test{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.test:first-child{border-top:0}.test small{color:var(--mute);display:block}
+.side{display:flex;gap:6px}.side button{min-width:64px;min-height:44px;padding:0 10px}
+.side button.done{border-color:var(--gold);color:var(--gold)}
+.big{font-size:clamp(64px,22vw,110px);font-weight:700;text-align:center;line-height:1;margin:8px 0;font-variant-numeric:tabular-nums}
+.big.hold{color:var(--gold)}
+.state{text-align:center;color:var(--mute);min-height:24px}
+.hint{color:var(--mute);font-size:14px}
+svg{display:block;margin:0 auto;width:220px;height:120px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}
+th{color:var(--mute);font-weight:500}
+.warn{color:var(--bad)}.good{color:var(--ok)}
+.hidden{display:none}
+.demo{width:100%;accent-color:var(--gold)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Studio<b>74</b> Mobilitätstest</h1>
+  <p class="sub">Testversion T0 · Handy als Messgerät</p>
+
+  <section id="start" class="card">
+    <h2>Start</h2>
+    <label class="hint" for="name">Kunde</label>
+    <input type="text" id="name" placeholder="Vor- und Nachname">
+    <p class="hint" id="sensorInfo">Tippe auf „Sensoren aktivieren“. Auf dem iPhone fragt Safari dann nach der Erlaubnis.</p>
+    <div class="row">
+      <button class="main" id="btnSensor">Sensoren aktivieren</button>
+      <button id="btnDemo">Demo am PC</button>
+    </div>
+  </section>
+
+  <section id="list" class="card hidden">
+    <h2>Tests</h2>
+    <div id="tests"></div>
+  </section>
+
+  <section id="measure" class="card hidden">
+    <h2 id="mTitle"></h2>
+    <p class="hint" id="mHow"></p>
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <path d="M20 110 A90 90 0 0 1 200 110" fill="none" stroke="#2e2e2e" stroke-width="10" stroke-linecap="round"/>
+      <path id="arc" d="" fill="none" stroke="#d4af37" stroke-width="10" stroke-linecap="round"/>
+    </svg>
+    <div class="big" id="angle">0°</div>
+    <div class="state" id="mState">Startposition einnehmen, dann Nullpunkt setzen</div>
+    <input type="range" class="demo hidden" id="demo" min="0" max="180" value="0" aria-label="Demo-Winkel">
+    <p class="hint">Bestwert: <b id="best">–</b></p>
+    <div class="row">
+      <button class="main" id="btnZero">Nullpunkt setzen</button>
+      <button id="btnSave">Speichern</button>
+    </div>
+    <div class="row" style="margin-top:10px"><button id="btnBack">Zurück</button></div>
+  </section>
+
+  <section id="result" class="card hidden">
+    <h2>Ergebnis</h2>
+    <div id="resTable"></div>
+    <p class="hint">Seitenunterschied ab 15 % ist rot markiert. Das ist ein Trainingshinweis, keine Diagnose.</p>
+    <div class="row">
+      <button id="btnCopy">Ergebnis kopieren</button>
+      <button id="btnReset">Neuer Kunde</button>
+    </div>
+    <p class="hint" id="copyMsg"></p>
+  </section>
+</main>
+
+<script>
+{
+const TESTS=[
+ {id:'ham',name:'Hamstrings',how:'Rückenlage. Handy längs auf das Schienbein legen, Bein liegt flach: Nullpunkt setzen. Dann das gestreckte Bein langsam anheben bis zur deutlichen Dehnung und kurz halten.'},
+ {id:'hip',name:'Hüftbeuger (Thomas-Test)',how:'Handy flach auf die Liege legen: Nullpunkt setzen. Kunde liegt am Liegenende und zieht ein Knie zur Brust. Handy längs auf den Oberschenkel des hängenden Beins legen und halten. Wert = Abweichung von der Waagerechten.'},
+ {id:'chest',name:'Brustmuskel',how:'Rückenlage, Arm gestreckt senkrecht nach oben, Handy längs am Unterarm: Nullpunkt setzen. Arm seitlich langsam Richtung Boden sinken lassen und halten.'},
+ {id:'sho',name:'Schulter Beugung',how:'Rückenlage, Arm gestreckt neben dem Körper, Handy längs am Unterarm: Nullpunkt setzen. Arm gestreckt über den Kopf führen und halten.'}
+];
+const $=id=>document.getElementById(id);
+let res={},cur=null,g=null,g0=null,ang=0,best=0,buf=[],demo=false,savedHold=false;
+try{res=JSON.parse(localStorage.getItem('s74mob')||'{}')}catch(e){}
+try{$('name').value=localStorage.getItem('s74mobName')||''}catch(e){}
+const store=()=>{try{localStorage.setItem('s74mob',JSON.stringify(res));localStorage.setItem('s74mobName',$('name').value)}catch(e){}};
+const show=ids=>['start','list','measure','result'].forEach(s=>$(s).classList.toggle('hidden',!ids.includes(s)));
+
+let ac=null;
+function beep(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();o.frequency.value=880;v.gain.value=.15;o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+.18)}catch(e){}
+ try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+
+function onMotion(e){
+ const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
+ const v=[a.x,a.y,a.z];
+ g=g?g.map((c,i)=>c*.85+v[i]*.15):v;
+ if(g0)update(angleBetween(g,g0));
+}
+function angleBetween(p,q){const d=p[0]*q[0]+p[1]*q[1]+p[2]*q[2],n=Math.hypot(...p)*Math.hypot(...q);return n?Math.acos(Math.max(-1,Math.min(1,d/n)))*180/Math.PI:0}
+
+function update(x){
+ ang=x;$('angle').textContent=Math.round(x)+'°';
+ const t=Math.min(x,180)/180*Math.PI,cx=110-90*Math.cos(t),cy=110-90*Math.sin(t);
+ $('arc').setAttribute('d',x<1?'':`M20 110 A90 90 0 0 1 ${cx.toFixed(1)} ${cy.toFixed(1)}`);
+ if(!cur||!g0)return;
+ buf.push(x);if(buf.length>40)buf.shift();
+ const stable=buf.length>=30&&Math.max(...buf)-Math.min(...buf)<2;
+ $('angle').classList.toggle('hold',stable&&x>10);
+ if(stable&&x>10){
+  if(x>best+1){best=x;$('best').textContent=Math.round(best)+'°';savedHold=false}
+  if(!savedHold){savedHold=true;beep();$('mState').textContent='Gehalten: '+Math.round(x)+'°. Weiter dehnen oder speichern.'}
+ }else if(x>10){$('mState').textContent='Bewegen … zum Messen ruhig halten'}
+}
+
+async function enableSensors(){
+ try{
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+   const p=await DeviceMotionEvent.requestPermission();if(p!=='granted'){$('sensorInfo').textContent='Zugriff abgelehnt. Tab schließen, Safari ganz beenden und die Seite neu öffnen. Hilft das nicht: iPhone-Einstellungen › Safari › Erweitert › Website-Daten, diese Seite löschen und neu laden.';return}
+  }
+  if(!window.isSecureContext){$('sensorInfo').textContent='Die Seite muss über https:// geöffnet werden, sonst gibt das Handy keine Sensordaten frei.';return}
+  window.addEventListener('devicemotion',onMotion);
+  setTimeout(()=>{if(!g){$('sensorInfo').textContent='Kein Bewegungssensor gefunden. Bitte auf dem Handy öffnen oder „Demo am PC“ nutzen.';show(['start'])}},1500);
+  beep();openList();
+ }catch(e){$('sensorInfo').textContent='Fehler: '+e.message}
+}
+
+function openList(){store();
+ $('tests').innerHTML=TESTS.map(t=>`<div class="test"><div>${t.name}<small>${fmt(t.id,'L')} / ${fmt(t.id,'R')}</small></div><div class="side">${['L','R'].map(s=>`<button data-t="${t.id}" data-s="${s}" class="${res[t.id+s]!=null?'done':''}">${s==='L'?'Links':'Rechts'}</button>`).join('')}</div></div>`).join('')+
+ `<div class="row" style="margin-top:12px"><button class="main" id="btnRes">Ergebnis anzeigen</button></div>`;
+ $('btnRes').onclick=openResult;
+ $('tests').querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>openMeasure(b.dataset.t,b.dataset.s));
+ show(['list']);
+}
+const fmt=(id,s)=>res[id+s]!=null?Math.round(res[id+s])+'°':'–';
+
+function openMeasure(id,side){
+ const t=TESTS.find(x=>x.id===id);cur={id,side};g0=null;best=0;buf=[];savedHold=false;
+ $('mTitle').textContent=t.name+' · '+(side==='L'?'links':'rechts');$('mHow').textContent=t.how;
+ $('best').textContent='–';$('angle').textContent='0°';$('arc').setAttribute('d','');
+ $('mState').textContent='Startposition einnehmen, dann Nullpunkt setzen';
+ $('demo').classList.toggle('hidden',!demo);$('demo').value=0;
+ show(['measure']);
+}
+
+$('btnZero').onclick=()=>{
+ if(demo){g0=[0,0,1]}else{if(!g){$('mState').textContent='Noch keine Sensordaten';return}g0=g.slice()}
+ buf=[];best=0;savedHold=false;$('best').textContent='–';update(0);beep();$('mState').textContent='Nullpunkt gesetzt. Jetzt bewegen.';
+};
+$('btnSave').onclick=()=>{
+ if(!g0){$('mState').textContent='Zuerst Nullpunkt setzen';return}
+ const v=best||ang;if(v<3){$('mState').textContent='Noch kein Messwert';return}
+ res[cur.id+cur.side]=v;store();beep();openList();
+};
+$('btnBack').onclick=openList;
+$('demo').oninput=e=>{if(g0)update(+e.target.value)};
+$('btnSensor').onclick=enableSensors;
+$('btnDemo').onclick=()=>{demo=true;openList()};
+
+function openResult(){
+ const rows=TESTS.map(t=>{const l=res[t.id+'L'],r=res[t.id+'R'];let d='–',cls='';
+  if(l!=null&&r!=null){const p=Math.abs(l-r)/Math.max(l,r,1)*100;d=Math.round(p)+' %';cls=p>=15?'warn':'good'}
+  return {n:t.name,l:fmt(t.id,'L'),r:fmt(t.id,'R'),d,cls}});
+ $('resTable').innerHTML=`<p class="hint">${esc($('name').value)||'Ohne Namen'} · ${new Date().toLocaleDateString('de-DE')}</p><table><tr><th>Test</th><th>Links</th><th>Rechts</th><th>Diff.</th></tr>${rows.map(x=>`<tr><td>${x.n}</td><td>${x.l}</td><td>${x.r}</td><td class="${x.cls}">${x.d}</td></tr>`).join('')}</table>`;
+ $('resTable').dataset.txt=`Mobilitätstest ${$('name').value} ${new Date().toLocaleDateString('de-DE')}\n`+rows.map(x=>`${x.n}: L ${x.l} / R ${x.r} (Diff. ${x.d})`).join('\n');
+ show(['result']);
+}
+const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('btnCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('resTable').dataset.txt);$('copyMsg').textContent='Kopiert'}catch(e){$('copyMsg').textContent='Kopieren nicht möglich'}};
+$('btnReset').onclick=()=>{res={};$('name').value='';store();show(['start'])};
+$('resTable').addEventListener('click',()=>{});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)store()});
+}
+</script>
+</body>
+</html>
