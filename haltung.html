@@ -35,6 +35,7 @@ ul.how{margin:6px 0 10px;padding-left:20px;color:var(--mute);font-size:15px}
 .bar i{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--bad);left:calc(50% - 8px);transition:left .1s}
 .bar::after{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;border-left:2px solid #666}
 canvas{width:100%;height:auto;display:block;border-radius:12px;background:#000}
+canvas.edit{touch-action:none;outline:2px solid var(--gold)}
 .m{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
 .m small{display:block;color:var(--mute)}
 .v{font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -49,7 +50,7 @@ canvas{width:100%;height:auto;display:block;border-radius:12px;background:#000}
 <body>
 <main>
   <h1>Studio<b>74</b> Haltungsanalyse</h1>
-  <p class="sub">Testversion H0.1 · Foto + Bilderkennung · <a href="./">zum Mobilitätstest</a></p>
+  <p class="sub">Testversion H0.2 · Foto + Bilderkennung · <a href="./">zum Mobilitätstest</a></p>
 
   <section id="start" class="card">
     <h2>Start</h2>
@@ -84,6 +85,8 @@ canvas{width:100%;height:auto;display:block;border-radius:12px;background:#000}
 
   <section id="res" class="card hidden">
     <h2 id="resTitle"></h2>
+    <div class="row" style="margin:0 0 10px"><button id="btnEdit">Punkte korrigieren</button></div>
+    <p class="hint hidden" id="editHint">Punkte mit dem Finger auf die richtige Stelle bzw. die Klebepunkte ziehen. Die Werte rechnen sich sofort neu.</p>
     <canvas id="cv"></canvas>
     <div id="metrics"></div>
     <p class="hint">Ampel nach vorläufigen Schwellenwerten zur Orientierung, keine Diagnose.</p>
@@ -150,16 +153,18 @@ const VER='1.2.2';
 const LIB=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${VER}`;
 const MODEL='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
 const $=id=>document.getElementById(id);
-const HOW={front:['Kunde steht 2–3 m entfernt, frontal zur Kamera, ganzer Körper im Rahmen.','Eng anliegende Kleidung, Arme locker hängend, Füße hüftbreit, Blick geradeaus.','Handy senkrecht auf Hüfthöhe, am besten auf ein Stativ oder Regal. Erst auslösen, wenn die Wasserwaage grün ist.'],
- side:['Kunde dreht sich um 90°, rechte oder linke Seite zur Kamera.','Entspannt stehen wie im Alltag, nicht extra gerade machen. Arme hängen locker.','Handy wieder senkrecht auf Hüfthöhe, Wasserwaage grün.']};
-let view='front',shots={},landmarker=null,loading=null,stream=null,roll=null,pitch=null;
+const RULES='<li><b>Kein Spiegelfoto</b>: im Spiegel sind links und rechts vertauscht.</li><li><b>Kleidung</b>: kurze enge Hose oder Leggings, Oberkörper frei oder enges Shirt/Sport-BH, Schuhe aus, Haare zusammen.</li>';
+const HOW={front:[RULES,'<li>Optional, aber deutlich genauer: Klebepunkte auf Ohrläppchen, Schulterhöhe (Schulterdach), Beckenkamm, Kniescheibenmitte und Sprunggelenk-Mitte.</li>','<li>Kunde steht 2–3 m entfernt, <b>genau frontal</b>, ganzer Körper im Rahmen. Arme locker hängen lassen, Füße hüftbreit, Blick geradeaus.</li>','<li>Handy senkrecht auf Hüfthöhe, am besten Stativ oder Regal. Auslösen erst bei grüner Wasserwaage, dann 2 Sekunden stillhalten.</li>'],
+ side:[RULES,'<li>Optional: Klebepunkte auf Ohr (vor dem Ohrloch), Schulterdach, großem Rollhügel (seitlicher Hüftknochen), Kniegelenkspalt und Außenknöchel.</li>','<li>Kunde dreht sich um 90°, Seite zur Kamera. Entspannt stehen wie im Alltag, Arme hängen locker.</li>','<li>Handy senkrecht auf Hüfthöhe, Wasserwaage grün, 2 Sekunden stillhalten.</li>']};
+let view='front',shots={},landmarker=null,loading=null,stream=null,roll=null,pitch=null,editing=false,drag=null,rafPending=false;
 try{$('name').value=localStorage.getItem('s74mobName')||''}catch(e){}
 const saveName=()=>{try{localStorage.setItem('s74mobName',$('name').value)}catch(e){}};
 const show=ids=>['start','cam','res','sum'].forEach(s=>$(s).classList.toggle('hidden',!ids.includes(s)));
 const fmt=v=>v.toFixed(1).replace('.',',')+'°';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-function setView(v){view=v;$('vFront').classList.toggle('sel',v==='front');$('vSide').classList.toggle('sel',v==='side');$('how').innerHTML=HOW[v].map(x=>`<li>${x}</li>`).join('')}
+function setView(v){view=v;$('vFront').classList.toggle('sel',v==='front');$('vSide').classList.toggle('sel',v==='side');$('how').innerHTML=HOW[v].join('')}
 setView('front');
 
 async function loadModel(statusEl){
@@ -202,63 +207,92 @@ function frameToCanvas(src,w,h){const max=1600,s=Math.min(1,max/Math.max(w,h)),c
 async function takeShot(){
  const v=$('video');if(!v.videoWidth){$('camStatus').textContent='Kamera noch nicht bereit';return}
  if(roll!==null&&(roll>=1.5||pitch>=6)){$('camStatus').textContent='Handy erst gerade ausrichten (Wasserwaage grün). Schiefe Fotos verfälschen die Winkel.';return}
- await analyze(frameToCanvas(v,v.videoWidth,v.videoHeight),$('camStatus'));
+ $('btnShot').disabled=true;$('camStatus').textContent='Bitte stillhalten …';
+ const frames=[];for(let i=0;i<5;i++){frames.push(frameToCanvas(v,v.videoWidth,v.videoHeight));await sleep(250)}
+ $('btnShot').disabled=false;
+ await analyze(frames,$('camStatus'));
 }
 function pickFile(){$('file').value='';$('file').click()}
-$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;saveName();const img=new Image();img.onload=async()=>{await analyze(frameToCanvas(img,img.naturalWidth,img.naturalHeight),$('cam').classList.contains('hidden')?$('status'):$('camStatus'));URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(f)};
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;saveName();const img=new Image();img.onload=async()=>{await analyze([frameToCanvas(img,img.naturalWidth,img.naturalHeight)],$('cam').classList.contains('hidden')?$('status'):$('camStatus'));URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(f)};
 
-async function analyze(c,st){
+async function analyze(frames,st){
  try{await loadModel(st)}catch(e){return}
- st.textContent='Analysiere …';
- const r=landmarker.detect(c);
- if(!r.landmarks||!r.landmarks.length){st.textContent='Keine Person erkannt. Ganzen Körper ins Bild bringen und neu aufnehmen.';return}
- const p=r.landmarks[0].map(l=>({x:l.x*c.width,y:l.y*c.height,v:l.visibility}));
- const low=[0,11,12,23,24,25,26,27,28].filter(i=>(p[i].v??1)<.5).length;
- let m,meta=null;
- if(view==='front')m=frontMetrics(p);else{const s=sideMetrics(p);m=s.out;meta=s}
- const out=document.createElement('canvas');out.width=c.width;out.height=c.height;out.getContext('2d').drawImage(c,0,0);
- drawOverlay(out,p,m,meta);
- shots[view]={canvas:out,metrics:m,warn:low>2};
- st.textContent='';renderRes();
+ st.textContent=frames.length>1?`Analysiere ${frames.length} Bilder …`:'Analysiere …';
+ await sleep(30);
+ const sets=[];for(const c of frames){const r=landmarker.detect(c);if(r.landmarks&&r.landmarks.length)sets.push(r.landmarks[0])}
+ if(!sets.length){st.textContent='Keine Person erkannt. Ganzen Körper ins Bild bringen und neu aufnehmen.';return}
+ const base=frames[Math.floor(frames.length/2)];
+ const p=sets[0].map((_,i)=>{const n=sets.length;return{x:sets.reduce((s,l)=>s+l[i].x,0)/n*base.width,y:sets.reduce((s,l)=>s+l[i].y,0)/n*base.height,v:sets.reduce((s,l)=>s+(l[i].visibility??1),0)/n}});
+ const low=[0,11,12,23,24,25,26,27,28].filter(i=>p[i].v<.5).length;
+ shots[view]={base,p,warn:low>2,n:sets.length};
+ editing=false;st.textContent='';renderRes();
 }
 
-function drawOverlay(c,p,m,meta){
+function compute(k){
+ const s=shots[k];
+ if(k==='front'){s.metrics=frontMetrics(s.p);s.meta=null}else{const r=sideMetrics(s.p);s.metrics=r.out;s.meta=r}
+ s.canvas=s.canvas||document.createElement('canvas');s.canvas.width=s.base.width;s.canvas.height=s.base.height;
+ s.canvas.getContext('2d').drawImage(s.base,0,0);drawOverlay(s.canvas,s.p,s.metrics,s.meta,k);
+ s.plaus=null;
+ if(k==='front'){const M=n=>s.metrics.find(o=>o.k===n),a=[M('head'),M('sho'),M('hip')],vs=a.map(o=>o.v);
+  if(a.every(o=>o.v>=2&&o.txt===a[0].txt)&&Math.max(...vs)-Math.min(...vs)<=1.5)s.plaus='Kopf, Schulter und Becken kippen fast gleich stark zur selben Seite. Das deutet eher auf ein schiefes Foto oder eine Schräglage des ganzen Körpers hin als auf einzelne Fehlstellungen. Bitte Aufnahme prüfen und neu fotografieren.'}
+}
+function editable(k){const s=shots[k];return k==='front'?[7,8,11,12,23,24,25,26,27,28]:Object.values(s.meta.idx)}
+
+function drawOverlay(c,p,m,meta,k){
  const x=c.getContext('2d'),W=c.width,lw=Math.max(2,W/220),fs=Math.max(14,W/34);
  x.lineCap='round';
  const ln=(a,b,col,w,dash)=>{x.save();x.strokeStyle=col;x.lineWidth=w;if(dash)x.setLineDash([w*3,w*3]);x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();x.restore()};
- const pt=q=>{x.fillStyle='#d4af37';x.beginPath();x.arc(q.x,q.y,lw*1.8,0,7);x.fill()};
+ const pt=q=>{x.fillStyle='#d4af37';x.beginPath();x.arc(q.x,q.y,lw*(editing?3.2:1.8),0,7);x.fill();if(editing){x.strokeStyle='#fff';x.lineWidth=lw*.7;x.beginPath();x.arc(q.x,q.y,lw*5.5,0,7);x.stroke()}};
  const label=(t,q,col)=>{x.font=`600 ${fs}px system-ui,sans-serif`;const w=x.measureText(t).width+fs*.6,X=Math.min(Math.max(q.x,4),W-w-4);x.fillStyle='rgba(0,0,0,.72)';x.fillRect(X,q.y-fs*1.1,w,fs*1.4);x.fillStyle=col;x.fillText(t,X+fs*.3,q.y)};
  const col=l=>l==='g'?'#6fcf97':l==='y'?'#f2c94c':'#ff6b6b';
- const M=k=>m.find(o=>o.k===k);
- if(view==='front'){
-  [[7,8,'head','Kopf'],[11,12,'sho','Schulter'],[23,24,'hip','Becken']].forEach(([a,b,k,n])=>{
-   const ym=(p[a].y+p[b].y)/2;ln({x:0,y:ym},{x:W,y:ym},'rgba(255,255,255,.5)',lw*.6,true);ln(p[a],p[b],col(M(k).lvl),lw*1.4);
-   label(`${n} ${fmt(M(k).v)}`,{x:Math.max(p[a].x,p[b].x)+fs*.8,y:ym+fs*.4},col(M(k).lvl))});
-  [[23,25],[25,27],[24,26],[26,28],[11,23],[12,24],[11,13],[13,15],[12,14],[14,16]].forEach(([a,b])=>ln(p[a],p[b],'#d4af37',lw));
+ const M=n=>m.find(o=>o.k===n);
+ if(k==='front'){
+  [[7,8,'head','Kopf'],[11,12,'sho','Schulter'],[23,24,'hip','Becken']].forEach(([a,b,n,t])=>{
+   const ym=(p[a].y+p[b].y)/2;ln({x:0,y:ym},{x:W,y:ym},'rgba(255,255,255,.5)',lw*.6,true);ln(p[a],p[b],col(M(n).lvl),lw*1.4);
+   if(!editing)label(`${t} ${fmt(M(n).v)}`,{x:Math.max(p[a].x,p[b].x)+fs*.8,y:ym+fs*.4},col(M(n).lvl))});
+  [[23,25],[25,27],[24,26],[26,28],[11,23],[12,24]].forEach(([a,b])=>ln(p[a],p[b],'#d4af37',lw));
+  if(!editing)[[11,13],[13,15],[12,14],[14,16]].forEach(([a,b])=>ln(p[a],p[b],'rgba(212,175,55,.5)',lw*.8));
   const am=mid(p[27],p[28]);ln({x:am.x,y:0},{x:am.x,y:c.height},'rgba(255,255,255,.5)',lw*.6,true);
-  [['kneeL',25],['kneeR',26]].forEach(([k,i])=>{if(M(k).lvl!=='g')label(fmt(M(k).v),{x:p[i].x+fs*.6,y:p[i].y},col(M(k).lvl))});
+  if(!editing)[['kneeL',25],['kneeR',26]].forEach(([n,i])=>{if(M(n).lvl!=='g')label(fmt(M(n).v),{x:p[i].x+fs*.6,y:p[i].y},col(M(n).lvl))});
   [7,8,11,12,23,24,25,26,27,28].forEach(i=>pt(p[i]));
  }else{
   const {E,S,H,K,A}=meta.idx;
   ln({x:p[A].x,y:0},{x:p[A].x,y:c.height},'rgba(255,255,255,.6)',lw*.8,true);
   [[E,S],[S,H],[H,K],[K,A]].forEach(([a,b])=>ln(p[a],p[b],'#d4af37',lw*1.2));
   [E,S,H,K,A].forEach(i=>pt(p[i]));
-  [['fhead',E,'Kopf'],['fsho',S,'Schulter'],['fhip',H,'Becken'],['knee',K,'Knie']].forEach(([k,i,n])=>label(`${n} ${fmt(M(k).v)}`,{x:p[i].x+fs*.9*meta.f,y:p[i].y},col(M(k).lvl)));
+  if(!editing)[['fhead',E,'Kopf'],['fsho',S,'Schulter'],['fhip',H,'Becken'],['knee',K,'Knie']].forEach(([n,i,t])=>label(`${t} ${fmt(M(n).v)}`,{x:p[i].x+fs*.9*meta.f,y:p[i].y},col(M(n).lvl)));
  }
 }
 
 function metricHTML(m){return m.map(o=>`<div class="m"><div><span class="dot ${o.lvl}"></span>${esc(o.label)}<small>${esc(o.txt)}</small></div><div class="v ${o.lvl}">${fmt(o.v)}</div></div>`).join('')}
+function paint(){
+ const s=shots[view];compute(view);
+ const cv=$('cv');if(cv.width!==s.canvas.width)cv.width=s.canvas.width;if(cv.height!==s.canvas.height)cv.height=s.canvas.height;cv.getContext('2d').drawImage(s.canvas,0,0);
+ $('metrics').innerHTML=(s.plaus?`<p class="hint r">${s.plaus}</p>`:'')+(s.warn?'<p class="hint r">Einige Körperpunkte waren schlecht sichtbar. Punkte prüfen und korrigieren oder neu aufnehmen.</p>':'')+metricHTML(s.metrics);
+}
 function renderRes(){
- const s=shots[view];
  $('resTitle').textContent=view==='front'?'Ansicht von vorn':'Ansicht von der Seite';
- const cv=$('cv');cv.width=s.canvas.width;cv.height=s.canvas.height;cv.getContext('2d').drawImage(s.canvas,0,0);
- $('metrics').innerHTML=(s.warn?'<p class="hint r">Einige Körperpunkte waren schlecht sichtbar. Für genaue Werte lieber neu aufnehmen.</p>':'')+metricHTML(s.metrics);
+ setEdit(false);paint();
  $('btnNext').textContent=view==='front'&&!shots.side?'Weiter: Seitenansicht':'Zum Ergebnis';
  show(['res']);store();
 }
+function setEdit(on){editing=on;$('cv').classList.toggle('edit',on);$('editHint').classList.toggle('hidden',!on);$('btnEdit').textContent=on?'Fertig':'Punkte korrigieren';$('btnEdit').classList.toggle('sel',on)}
 function store(){try{const d={name:$('name').value,date:new Date().toISOString(),front:shots.front?.metrics,side:shots.side?.metrics};localStorage.setItem('s74haltung',JSON.stringify(d))}catch(e){}}
 
+const cv=$('cv');
+const toCanvas=e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height,s:cv.width/r.width}};
+cv.addEventListener('pointerdown',e=>{if(!editing)return;const q=toCanvas(e),s=shots[view];let best=null,bd=40*q.s;
+ editable(view).forEach(i=>{const d=Math.hypot(s.p[i].x-q.x,s.p[i].y-q.y);if(d<bd){bd=d;best=i}});
+ if(best!==null){drag=best;cv.setPointerCapture(e.pointerId);e.preventDefault()}});
+cv.addEventListener('pointermove',e=>{if(drag===null)return;const q=toCanvas(e),s=shots[view];s.p[drag]={...s.p[drag],x:Math.max(0,Math.min(cv.width,q.x)),y:Math.max(0,Math.min(cv.height,q.y)),v:1};
+ if(!rafPending){rafPending=true;requestAnimationFrame(()=>{rafPending=false;paint()})}});
+const endDrag=()=>{if(drag!==null){drag=null;shots[view].warn=false;paint();store()}};
+cv.addEventListener('pointerup',endDrag);cv.addEventListener('pointercancel',endDrag);
+$('btnEdit').onclick=()=>{setEdit(!editing);paint()};
+
 function next(){
+ setEdit(false);paint();
  if(view==='front'&&!shots.side){setView('side');if(stream)show(['cam']);else{show(['start']);$('status').textContent='Jetzt das Foto von der Seite wählen.'}return}
  renderSum();
 }
@@ -266,8 +300,8 @@ function renderSum(){
  const date=new Date().toLocaleDateString('de-DE');
  $('sumHead').textContent=`${$('name').value||'Ohne Namen'} · ${date}`;
  $('thumbs').innerHTML='';
- ['front','side'].forEach(k=>{if(!shots[k])return;const c=document.createElement('canvas');c.width=shots[k].canvas.width;c.height=shots[k].canvas.height;c.getContext('2d').drawImage(shots[k].canvas,0,0);$('thumbs').appendChild(c)});
- let h='';['front','side'].forEach(k=>{if(shots[k])h+=`<h3>${k==='front'?'Von vorn':'Von der Seite'}</h3>`+metricHTML(shots[k].metrics)});
+ ['front','side'].forEach(k=>{if(!shots[k])return;compute(k);const c=document.createElement('canvas');c.width=shots[k].canvas.width;c.height=shots[k].canvas.height;c.getContext('2d').drawImage(shots[k].canvas,0,0);$('thumbs').appendChild(c)});
+ let h='';['front','side'].forEach(k=>{if(shots[k])h+=`<h3>${k==='front'?'Von vorn':'Von der Seite'}</h3>`+(shots[k].plaus?`<p class="hint r">Hinweis: Foto wirkt schief, Werte mit Vorsicht.</p>`:'')+metricHTML(shots[k].metrics)});
  const all=[...(shots.front?.metrics||[]),...(shots.side?.metrics||[])],cnt=l=>all.filter(o=>o.lvl===l).length;
  h=`<p class="hint"><span class="dot g"></span>${cnt('g')} unauffällig · <span class="dot y"></span>${cnt('y')} beobachten · <span class="dot r"></span>${cnt('r')} auffällig</p>`+h;
  $('sumList').innerHTML=h;show(['sum']);
@@ -281,7 +315,7 @@ function sumText(){
 $('btnCam').onclick=startCam;$('btnFile').onclick=pickFile;$('btnFile2').onclick=pickFile;
 $('vFront').onclick=()=>setView('front');$('vSide').onclick=()=>setView('side');
 $('btnShot').onclick=takeShot;
-$('btnRetake').onclick=()=>{if(stream)show(['cam']);else{show(['start']);pickFile()}};
+$('btnRetake').onclick=()=>{setEdit(false);if(stream)show(['cam']);else{show(['start']);pickFile()}};
 $('btnNext').onclick=next;
 $('btnCopy').onclick=async()=>{try{await navigator.clipboard.writeText(sumText());$('sumMsg').textContent='Kopiert'}catch(e){$('sumMsg').textContent='Kopieren nicht möglich'}};
 $('btnSave').onclick=()=>{['front','side'].forEach(k=>{if(!shots[k])return;shots[k].canvas.toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`haltung-${k}-${($('name').value||'kunde').replace(/\s+/g,'-')}.jpg`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)},'image/jpeg',.9)})};
