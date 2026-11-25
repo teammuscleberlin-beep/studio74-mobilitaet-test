@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Studio74 Mobilitätstest</title>
 <style>
-/* VOICE: ruhig, Werkzeug im Studio | IDEA: Trainer-Anleitung mit Figur | PICTURE: animierte Figur auf Liege, folgt live dem Sensor
+/* VOICE: ruhig, Werkzeug im Studio | IDEA: Trainer-Anleitung mit Figur | PICTURE: animierte Figur, folgt live dem Sensor
    COLOUR/TYPE: Studio74 schwarz/gold, Sans | LAYOUT: eine Spalte, Handy zuerst */
 :root{--bg:#0d0d0d;--card:#1a1a1a;--line:#2e2e2e;--ink:#f2f2f2;--mute:#9a9a9a;--gold:#d4af37;--bad:#ff6b6b;--ok:#6fcf97}
 *{box-sizing:border-box;min-width:0}
@@ -13,32 +13,34 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-app
 main{max-width:520px;margin:0 auto;padding:16px 16px 40px}
 h1{font-size:22px;margin:4px 0 2px;font-weight:600}h1 b{color:var(--gold)}
 h2{font-size:18px;margin:0 0 8px;font-weight:600}
+h3{font-size:14px;color:var(--gold);margin:16px 0 2px;font-weight:600}
 .sub{color:var(--mute);font-size:14px;margin:0 0 16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
 button{font:inherit;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#222;color:var(--ink);padding:0 16px;cursor:pointer}
 button.main{background:var(--gold);color:#111;border-color:var(--gold);font-weight:600}
+button.sel{border-color:var(--gold);color:var(--gold)}
 button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 input[type=text]{width:100%;font:inherit;min-height:48px;border-radius:12px;border:1px solid var(--line);background:#111;color:var(--ink);padding:0 14px}
 .row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1}
-.test{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
-.test:first-of-type{border-top:0}.test small{color:var(--mute);display:block}
-.side{display:flex;gap:6px}.side button{min-width:64px;min-height:44px;padding:0 10px}
+.test{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.test small{color:var(--mute);display:block}
+.side{display:flex;gap:6px;flex:none}.side button{min-width:60px;min-height:44px;padding:0 8px;font-size:14px}
 .side button.done{border-color:var(--gold);color:var(--gold)}
 .fig{position:relative;background:#111;border:1px solid var(--line);border-radius:12px;margin:4px 0 10px}
 .fig svg{display:block;width:100%;height:auto}
-.tag{position:absolute;top:8px;left:10px;font-size:12px;color:var(--mute)}
-.tag.live{color:var(--gold)}
+.tag{position:absolute;top:8px;left:10px;font-size:12px;color:var(--mute)}.tag.live{color:var(--gold)}
 .big{font-size:clamp(56px,18vw,96px);font-weight:700;text-align:center;line-height:1;margin:4px 0;font-variant-numeric:tabular-nums}
 .big.hold{color:var(--gold)}
 .state{text-align:center;color:var(--mute);min-height:24px;margin-bottom:8px}
 .hint{color:var(--mute);font-size:14px}
+.prog{height:6px;background:#2a2a2a;border-radius:3px;margin:6px 0 4px}.prog i{display:block;height:6px;background:var(--gold);border-radius:3px}
 ol.steps{list-style:none;padding:0;margin:0 0 12px;counter-reset:s}
-ol.steps li{counter-increment:s;display:flex;gap:10px;padding:7px 0;color:var(--mute);font-size:15px}
+ol.steps li{counter-increment:s;display:flex;gap:10px;padding:6px 0;color:var(--mute);font-size:15px}
 ol.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:13px}
 ol.steps li.now{color:var(--ink)}ol.steps li.now::before{background:var(--gold);color:#111;border-color:var(--gold)}
 ol.steps li.ok::before{content:"✓";color:var(--gold);border-color:var(--gold)}
-table{width:100%;border-collapse:collapse;font-size:15px}
-td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:right}td:first-child,th:first-child{text-align:left}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}td:first-child,th:first-child{text-align:left;white-space:normal}
 th{color:var(--mute);font-weight:500}
 .warn{color:var(--bad)}.good{color:var(--ok)}
 .hidden{display:none}
@@ -49,12 +51,17 @@ label.chk{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:14
 <body>
 <main>
   <h1>Studio<b>74</b> Mobilitätstest</h1>
-  <p class="sub">Testversion T0.2 · geführt, Handy als Messgerät</p>
+  <p class="sub">Testversion T0.3 · Ganzkörper, Handy als Messgerät</p>
 
   <section id="start" class="card">
     <h2>Start</h2>
     <label class="hint" for="name">Kunde</label>
     <input type="text" id="name" placeholder="Vor- und Nachname">
+    <p class="hint" style="margin:12px 0 6px">Programm</p>
+    <div class="row">
+      <button id="pQuick" class="sel">Schnelltest<br><small>6 Tests · ca. 8 Min.</small></button>
+      <button id="pFull">Ganzkörper<br><small>15 Tests · ca. 25 Min.</small></button>
+    </div>
     <label class="chk"><input type="checkbox" id="voice" checked> Sprachansagen</label>
     <p class="hint" id="sensorInfo">Tippe auf „Sensoren aktivieren“. Auf dem iPhone fragt Safari dann nach der Erlaubnis.</p>
     <div class="row">
@@ -65,12 +72,13 @@ label.chk{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:14
 
   <section id="list" class="card hidden">
     <h2>Tests</h2>
+    <p class="hint" id="progTxt"></p><div class="prog"><i id="progBar" style="width:0"></i></div>
     <div id="tests"></div>
   </section>
 
   <section id="measure" class="card hidden">
     <h2 id="mTitle"></h2>
-    <div class="fig"><span class="tag" id="figTag">Vorschau: so läuft die Bewegung</span><svg id="figure" viewBox="0 0 320 180" role="img" aria-label="Bewegungsablauf"></svg></div>
+    <div class="fig"><span class="tag" id="figTag"></span><svg id="figure" viewBox="0 0 320 180" role="img" aria-label="Bewegungsablauf"></svg></div>
     <ol class="steps" id="steps"></ol>
     <div class="big" id="angle">0°</div>
     <div class="state" id="mState"></div>
@@ -86,97 +94,137 @@ label.chk{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:14
   <section id="result" class="card hidden">
     <h2>Ergebnis</h2>
     <div id="resTable"></div>
-    <p class="hint">Seitenunterschied ab 15 % ist rot markiert. Das ist ein Trainingshinweis, keine Diagnose.</p>
+    <p class="hint">Seitenunterschied ab 15 % ist rot markiert. Das ist ein Trainingshinweis, keine Diagnose. Normwerte folgen in einer späteren Version.</p>
     <div class="row">
       <button id="btnCopy">Ergebnis kopieren</button>
-      <button id="btnReset">Neuer Kunde</button>
+      <button id="btnList">Zur Testliste</button>
     </div>
+    <div class="row" style="margin-top:10px"><button id="btnReset">Neuer Kunde</button></div>
     <p class="hint" id="copyMsg"></p>
   </section>
 </main>
 
 <script>
 {
-/* Figuren: statische Teile + ein beweglicher Körperteil (Drehpunkt, Länge, Grundwinkel, Richtung) */
+const LR=[{k:'L',l:'Links'},{k:'R',l:'Rechts'}];
+const SUP={bench:[20,300,124],head:[52,104,11],lines:[[64,110,175,112],[80,112,150,118],[175,116,298,116]]};
+const HEADEND={bench:[105,215,124],ell:[160,116,46,14]};
+/* Bewegliches Teil: pivot, base (Grad), dir, parts im lokalen System (+x entlang des Körperteils) */
 const TESTS=[
- {id:'ham',name:'Hamstrings',demo:80,
-  pos:'Kunde in Rückenlage, beide Beine gestreckt. Handy längs auf das Schienbein des Testbeins legen.',
-  zero:'Bein liegt flach auf der Liege.',
-  move:'Gestrecktes Bein langsam anheben, Knie bleibt durchgestreckt, Becken bleibt liegen.',
-  fig:{bench:[20,300],view:'Seitenansicht',head:[52,104],lines:[[64,110,175,112],[80,112,150,118],[175,116,298,116]],
-   pivot:[175,112],len:100,base:0,dir:-1}},
- {id:'hip',name:'Hüftbeuger (Thomas-Test)',demo:20,
-  pos:'Kunde sitzt am Liegenende, legt sich zurück und zieht ein Knie zur Brust. Das Testbein hängt locker über die Kante.',
-  zero:'Handy flach auf die Liege legen, dann längs auf den Oberschenkel des hängenden Beins.',
+ {id:'lws',pos:'Stehen',reg:'Wirbelsäule',name:'Rumpfbeuge (LWS + Hüfte)',demo:90,
+  slots:[{k:'A',l:'Teil 1',phone:[46,-8],where:'Handy längs auf die Wirbelsäule in Höhe der unteren Rippen (unterer Brustwirbel, T12).'},
+         {k:'B',l:'Teil 2',phone:[8,-8],where:'Handy längs auf das Kreuzbein (flaches Knochenstück über dem Po).'}],
+  pos2:'Kunde steht aufrecht, Füße hüftbreit, Knie gestreckt.',zero:'Kunde steht aufrecht, Handy liegt an.',
+  move:'Langsam nach vorn beugen, Knie bleiben gestreckt, Arme hängen locker.',
+  fig:{view:'Seitenansicht',floor:[60,260,170],lines:[[150,168,150,104]],pivot:[150,102],base:-90,dir:1,parts:[[0,0,60,0],[52,2,14,8]],circ:[[72,0,10]]}},
+ {id:'seit',pos:'Stehen',reg:'Wirbelsäule',name:'Seitneigung',demo:30,slots:LR,
+  pos2:'Kunde steht aufrecht, Füße hüftbreit. Handy längs auf die Wirbelsäule zwischen die Schulterblätter halten.',zero:'Kunde steht aufrecht.',
+  move:'Zur Testseite neigen, Hand gleitet am Oberschenkel nach unten, nicht nach vorn oder hinten kippen.',
+  fig:{view:'Ansicht von hinten',floor:[60,260,170],lines:[[140,168,145,104],[160,168,155,104]],pivot:[150,102],base:-90,dir:1,parts:[[0,0,60,0],[54,-14,54,14],[54,-14,14,-18],[54,14,14,18]],circ:[[72,0,10]],phone:[42,0]}},
+ {id:'ankle',pos:'Stehen',reg:'Hüfte & Bein',name:'Sprunggelenk (Knie zur Wand)',demo:38,slots:LR,
+  pos2:'Ausfallschritt vor einer Wand, Testfuß vorn. Handy längs vorn auf das Schienbein.',zero:'Schienbein steht senkrecht.',
+  move:'Knie Richtung Wand schieben, Ferse bleibt am Boden.',
+  fig:{view:'Seitenansicht',floor:[40,300,170],lines:[[150,168,186,128],[284,60,284,170]],pivot:[236,168],base:-90,dir:1,parts:[[0,0,52,0],[52,0,92,-46]],phone:[24,7]}},
+ {id:'hws_seit',pos:'Sitzen',reg:'Halswirbelsäule',name:'HWS Seitneigung',demo:40,slots:LR,
+  pos2:'Kunde sitzt aufrecht, Schultern locker. Handy quer auf die Stirn halten.',zero:'Kopf gerade, Blick nach vorn.',
+  move:'Ohr Richtung Schulter neigen, Schulter nicht hochziehen, nicht drehen.',
+  fig:{view:'Ansicht von vorn',bench:[118,182,128],lines:[[135,130,135,168],[165,130,165,168],[150,126,150,82],[124,82,176,82],[124,82,120,124],[176,82,180,124]],pivot:[150,78],base:-90,dir:1,parts:[[0,0,10,0]],circ:[[24,0,13]],phone:[24,0],prot:90}},
+ {id:'hip_ir',pos:'Sitzen',reg:'Hüfte & Bein',name:'Hüfte Innenrotation',demo:35,slots:LR,
+  pos2:'Kunde sitzt auf der Liegenkante, Knie 90°, Oberschenkel bleibt liegen. Handy längs vorn auf das Schienbein.',zero:'Unterschenkel hängt senkrecht.',
+  move:'Fuß nach außen drehen (Unterschenkel schwingt nach außen), Gesäß bleibt auf der Liege.',
+  fig:{view:'Ansicht von vorn',bench:[100,200,100],lines:[[150,98,150,48],[128,50,172,50],[128,50,122,96],[172,50,178,96],[130,108,130,162]],dots:[[150,36,11],[130,106,7],[170,106,7]],pivot:[170,108],base:90,dir:-1,parts:[[0,0,54,0]],phone:[32,0]}},
+ {id:'hip_er',pos:'Sitzen',reg:'Hüfte & Bein',name:'Hüfte Außenrotation',demo:38,slots:LR,
+  pos2:'Wie Innenrotation: Liegenkante, Knie 90°, Handy längs vorn auf das Schienbein.',zero:'Unterschenkel hängt senkrecht.',
+  move:'Fuß nach innen führen (Unterschenkel schwingt zur Körpermitte), Gesäß bleibt auf der Liege.',
+  fig:{view:'Ansicht von vorn',bench:[100,200,100],lines:[[150,98,150,48],[128,50,172,50],[128,50,122,96],[172,50,178,96],[118,108,104,160]],dots:[[150,36,11],[122,106,7],[170,106,7]],pivot:[170,108],base:90,dir:1,parts:[[0,0,54,0]],phone:[32,0]}},
+ {id:'ham',pos:'Rückenlage',reg:'Hüfte & Bein',name:'Hamstrings',demo:80,slots:LR,
+  pos2:'Rückenlage, beide Beine gestreckt. Handy längs auf das Schienbein des Testbeins.',zero:'Bein liegt flach auf der Liege.',
+  move:'Gestrecktes Bein langsam anheben, Knie bleibt gestreckt, Becken bleibt liegen.',
+  fig:Object.assign({},SUP,{view:'Seitenansicht',pivot:[175,112],base:0,dir:-1,parts:[[0,0,100,0]],phone:[62,0]})},
+ {id:'hip',pos:'Rückenlage',reg:'Hüfte & Bein',name:'Hüftbeuger (Thomas-Test)',demo:20,slots:LR,
+  pos2:'Kunde sitzt am Liegenende, legt sich zurück und zieht ein Knie zur Brust. Testbein hängt locker über die Kante.',zero:'Handy flach auf die Liege legen, dann längs auf den Oberschenkel des hängenden Beins.',
   move:'Oberschenkel locker hängen lassen, nicht drücken. Wert = Abweichung von der Waagerechten.',
-  fig:{bench:[20,200],view:'Seitenansicht',head:[40,104],lines:[[52,110,196,112],[196,110,166,78],[166,78,190,96],[70,112,130,104]],
-   pivot:[196,114],len:64,base:0,dir:1,shin:40}},
- {id:'chest',name:'Brustmuskel',demo:95,
-  pos:'Kunde in Rückenlage, Testarm gestreckt senkrecht nach oben. Handy längs am Unterarm, Display nach außen.',
-  zero:'Arm zeigt senkrecht zur Decke.',
-  move:'Gestreckten Arm seitlich langsam Richtung Boden sinken lassen, Schulter bleibt auf der Liege.',
-  fig:{bench:[105,215],view:'Ansicht vom Kopfende',ellipse:[160,116,46,14],head:[160,92],lines:[[122,110,122,40]],
-   pivot:[198,110],len:74,base:-90,dir:1}},
- {id:'sho',name:'Schulter Beugung',demo:170,
-  pos:'Kunde in Rückenlage, Testarm gestreckt neben dem Körper. Handy längs am Unterarm.',
-  zero:'Arm liegt gestreckt neben dem Körper.',
-  move:'Gestreckten Arm langsam über den Kopf führen, Rücken bleibt flach auf der Liege.',
-  fig:{bench:[20,310],view:'Seitenansicht',head:[92,104],lines:[[104,110,205,112],[205,116,305,116]],
-   pivot:[108,108],len:72,base:0,dir:-1}}
+  fig:{view:'Seitenansicht',bench:[20,200,124],head:[40,104,11],lines:[[52,110,196,112],[196,110,166,78],[166,78,190,96],[70,112,130,104]],pivot:[196,114],base:0,dir:1,parts:[[0,0,64,0],[64,0,64,40]],phone:[40,0]}},
+ {id:'sho',pos:'Rückenlage',reg:'Schulter & Brust',name:'Schulter Beugung',demo:170,slots:LR,
+  pos2:'Rückenlage, Testarm gestreckt neben dem Körper. Handy längs am Unterarm.',zero:'Arm liegt gestreckt neben dem Körper.',
+  move:'Gestreckten Arm langsam über den Kopf führen, Rücken bleibt flach.',
+  fig:{view:'Seitenansicht',bench:[20,310,124],head:[92,104,11],lines:[[104,110,205,112],[205,116,305,116]],pivot:[108,108],base:0,dir:-1,parts:[[0,0,72,0]],phone:[46,0]}},
+ {id:'chest',pos:'Rückenlage',reg:'Schulter & Brust',name:'Brustmuskel',demo:95,slots:LR,
+  pos2:'Rückenlage, Testarm gestreckt senkrecht nach oben. Handy längs am Unterarm.',zero:'Arm zeigt senkrecht zur Decke.',
+  move:'Gestreckten Arm seitlich Richtung Boden sinken lassen, Schulter bleibt auf der Liege.',
+  fig:Object.assign({},HEADEND,{view:'Ansicht vom Kopfende',head:[160,92,11],lines:[[122,110,122,40]],pivot:[198,110],base:-90,dir:1,parts:[[0,0,74,0]],phone:[48,0]})},
+ {id:'sho_er',pos:'Rückenlage',reg:'Schulter & Brust',name:'Schulter Außenrotation',demo:85,slots:LR,
+  pos2:'Rückenlage, Oberarm 90° zur Seite auf der Liege, Ellbogen 90° gebeugt, Unterarm zeigt nach oben. Handy längs am Unterarm.',zero:'Unterarm zeigt senkrecht zur Decke.',
+  move:'Unterarm Richtung Kopf nach hinten sinken lassen, Schulter bleibt liegen.',
+  fig:{view:'Seitenansicht',bench:[20,300,124],head:[52,104,11],lines:[[64,110,175,112],[175,116,298,116]],dots:[[90,112,6]],pivot:[90,108],base:-90,dir:-1,parts:[[0,0,52,0]],phone:[32,0]}},
+ {id:'sho_ir',pos:'Rückenlage',reg:'Schulter & Brust',name:'Schulter Innenrotation',demo:60,slots:LR,
+  pos2:'Wie Außenrotation: Oberarm 90° zur Seite, Ellbogen 90°, Handy längs am Unterarm.',zero:'Unterarm zeigt senkrecht zur Decke.',
+  move:'Unterarm Richtung Füße nach vorn sinken lassen, Schulter hebt nicht ab.',
+  fig:{view:'Seitenansicht',bench:[20,300,124],head:[52,104,11],lines:[[64,110,175,112],[175,116,298,116]],dots:[[90,112,6]],pivot:[90,108],base:-90,dir:1,parts:[[0,0,52,0]],phone:[32,0]}},
+ {id:'hws_rot',pos:'Rückenlage',reg:'Halswirbelsäule',name:'HWS Rotation',demo:70,slots:LR,
+  pos2:'Rückenlage, Kopf liegt mittig ohne Kissen. Handy quer auf die Stirn halten.',zero:'Gesicht zeigt zur Decke.',
+  move:'Kopf langsam zur Testseite drehen, Kinn nicht anheben.',
+  fig:Object.assign({},HEADEND,{view:'Ansicht vom Kopfende',pivot:[160,90],base:-90,dir:1,parts:[[15,0,24,0]],circ:[[0,0,16]],phone:[10,0],prot:90})},
+ {id:'quad',pos:'Bauchlage',reg:'Hüfte & Bein',name:'Oberschenkel vorn (Kniebeugung)',demo:125,slots:LR,
+  pos2:'Bauchlage, Beine gestreckt. Handy längs hinten auf das Schienbein bzw. die Wade.',zero:'Bein liegt gestreckt auf der Liege.',
+  move:'Ferse Richtung Gesäß führen, Becken bleibt liegen, kein Hohlkreuz.',
+  fig:{view:'Seitenansicht',bench:[20,300,124],head:[52,106,11],lines:[[64,112,175,112],[80,114,150,118],[175,114,250,116]],pivot:[250,114],base:0,dir:-1,parts:[[0,0,55,0]],phone:[32,0]}},
+ {id:'bws_rot',pos:'Vierfüßlerstand',reg:'Wirbelsäule',name:'BWS Rotation',demo:45,slots:LR,
+  pos2:'Vierfüßlerstand, Gesäß zu den Fersen, Testhand in den Nacken. Handy quer auf den oberen Rücken (zwischen den Schulterblättern).',zero:'Rücken waagerecht, Blick zum Boden.',
+  move:'Ellbogen der Testseite zur Decke aufdrehen, Becken bleibt ruhig.',
+  fig:{view:'Ansicht vom Kopfende',floor:[80,240,170],lines:[[122,168,122,108]],pivot:[122,106],base:0,dir:-1,parts:[[0,0,76,0],[76,0,60,-24]],circ:[[38,-20,10]],phone:[38,-7]}}
 ];
+const QUICK=['lws','seit','ham','hip','sho','chest'];
 const $=id=>document.getElementById(id);
-let res={},cur=null,g=null,g0=null,ang=0,best=0,buf=[],demo=false,heldNow=false,raf=0;
-try{res=JSON.parse(localStorage.getItem('s74mob')||'{}')}catch(e){}
-try{$('name').value=localStorage.getItem('s74mobName')||''}catch(e){}
-const store=()=>{try{localStorage.setItem('s74mob',JSON.stringify(res));localStorage.setItem('s74mobName',$('name').value)}catch(e){}};
+let res={},prog='quick',cur=null,g=null,g0=null,ang=0,best=0,buf=[],demo=false,heldNow=false,raf=0;
+try{res=JSON.parse(localStorage.getItem('s74mob')||'{}');prog=localStorage.getItem('s74prog')||'quick';$('name').value=localStorage.getItem('s74mobName')||''}catch(e){}
+const store=()=>{try{localStorage.setItem('s74mob',JSON.stringify(res));localStorage.setItem('s74mobName',$('name').value);localStorage.setItem('s74prog',prog)}catch(e){}};
 const show=ids=>['start','list','measure','result'].forEach(s=>$(s).classList.toggle('hidden',!ids.includes(s)));
+const active=()=>TESTS.filter(t=>prog==='full'||QUICK.includes(t.id));
+const T=id=>TESTS.find(t=>t.id===id);
+function setProg(p){prog=p;$('pQuick').classList.toggle('sel',p==='quick');$('pFull').classList.toggle('sel',p==='full');store()}
+setProg(prog);
 
 let ac=null;
 function beep(f=880){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),v=ac.createGain();o.frequency.value=f;v.gain.value=.15;o.connect(v);v.connect(ac.destination);o.start();o.stop(ac.currentTime+.18)}catch(e){}
  try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
 function say(t){if(!$('voice').checked)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='de-DE';u.rate=1.05;speechSynthesis.speak(u)}catch(e){}}
 
-function drawFig(t,a){
- const f=t.fig,P=Math.PI/180,r=(f.base+f.dir*a)*P,[px,py]=f.pivot;
- const ex=px+f.len*Math.cos(r),ey=py+f.len*Math.sin(r);
- const b0=f.base*P,zx=px+f.len*.95*Math.cos(b0),zy=py+f.len*.95*Math.sin(b0);
- const ph=.62,qx=px+(ex-px)*ph,qy=py+(ey-py)*ph,deg=(f.base+f.dir*a).toFixed(1);
- let s=`<rect x="${f.bench[0]}" y="124" width="${f.bench[1]-f.bench[0]}" height="10" rx="3" fill="#2a2a2a"/>`;
+const G='#7d7d7d',W='#f2f2f2',L=(l,c,w)=>`<line x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+function drawFig(t,a,slot){
+ const f=t.fig,P=Math.PI/180,[px,py]=f.pivot,rot=f.base+f.dir*a,r=rot*P,b0=f.base*P;
+ let s='';
+ if(f.bench)s+=`<rect x="${f.bench[0]}" y="${f.bench[2]}" width="${f.bench[1]-f.bench[0]}" height="10" rx="3" fill="#2a2a2a"/>`;
+ if(f.floor)s+=L([f.floor[0],f.floor[2],f.floor[1],f.floor[2]],'#333',3);
  s+=`<text x="310" y="18" text-anchor="end" font-size="11" fill="#777">${f.view}</text>`;
- s+=`<line x1="${px}" y1="${py}" x2="${zx.toFixed(1)}" y2="${zy.toFixed(1)}" stroke="#555" stroke-width="1.5" stroke-dasharray="4 4"/>`;
- if(f.ellipse)s+=`<ellipse cx="${f.ellipse[0]}" cy="${f.ellipse[1]}" rx="${f.ellipse[2]}" ry="${f.ellipse[3]}" fill="#3a3a3a"/>`;
- s+=f.lines.map(l=>`<line x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}" stroke="#7d7d7d" stroke-width="9" stroke-linecap="round"/>`).join('');
- s+=`<circle cx="${f.head[0]}" cy="${f.head[1]}" r="11" fill="#7d7d7d"/>`;
- if(a>2){const R=26,large=Math.abs(a)>180?1:0,sw=f.dir>0?1:0,ax=px+R*Math.cos(b0),ay=py+R*Math.sin(b0),bx=px+R*Math.cos(r),by=py+R*Math.sin(r);
-  s+=`<path d="M${ax.toFixed(1)} ${ay.toFixed(1)} A${R} ${R} 0 ${large} ${sw} ${bx.toFixed(1)} ${by.toFixed(1)}" fill="none" stroke="#d4af37" stroke-width="2"/>`}
- s+=`<line x1="${px}" y1="${py}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="#f2f2f2" stroke-width="10" stroke-linecap="round"/>`;
- if(f.shin)s+=`<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${(ey+f.shin).toFixed(1)}" stroke="#f2f2f2" stroke-width="9" stroke-linecap="round"/>`;
- s+=`<rect x="-11" y="-5" width="22" height="10" rx="2.5" fill="#d4af37" stroke="#111" stroke-width="1.5" transform="translate(${qx.toFixed(1)} ${qy.toFixed(1)}) rotate(${deg})"/>`;
+ s+=L([px,py,(px+70*Math.cos(b0)).toFixed(1),(py+70*Math.sin(b0)).toFixed(1)],'#555',1.5).replace('/>',' stroke-dasharray="4 4"/>');
+ if(f.ell)s+=`<ellipse cx="${f.ell[0]}" cy="${f.ell[1]}" rx="${f.ell[2]}" ry="${f.ell[3]}" fill="#3a3a3a"/>`;
+ s+=(f.lines||[]).map(l=>L(l,G,9)).join('');
+ s+=(f.dots||[]).map(d=>`<circle cx="${d[0]}" cy="${d[1]}" r="${d[2]}" fill="${G}"/>`).join('');
+ if(f.head)s+=`<circle cx="${f.head[0]}" cy="${f.head[1]}" r="${f.head[2]}" fill="${G}"/>`;
+ if(a>2){const R=26,sw=f.dir>0?1:0,lg=a>180?1:0;s+=`<path d="M${(px+R*Math.cos(b0)).toFixed(1)} ${(py+R*Math.sin(b0)).toFixed(1)} A${R} ${R} 0 ${lg} ${sw} ${(px+R*Math.cos(r)).toFixed(1)} ${(py+R*Math.sin(r)).toFixed(1)}" fill="none" stroke="#d4af37" stroke-width="2"/>`}
+ const ph=(slot&&slot.phone)||f.phone||[f.parts[0][2]*.6,0];
+ s+=`<g transform="translate(${px} ${py}) rotate(${rot.toFixed(1)})">`+f.parts.map(l=>L(l,W,9)).join('')+(f.circ||[]).map(c=>`<circle cx="${c[0]}" cy="${c[1]}" r="${c[2]}" fill="#e6e6e6"/>`).join('')+
+  `<rect x="-11" y="-5" width="22" height="10" rx="2.5" fill="#d4af37" stroke="#111" stroke-width="1.5" transform="translate(${ph[0]} ${ph[1]}) rotate(${f.prot||0})"/></g>`;
  s+=`<circle cx="${px}" cy="${py}" r="3.5" fill="#d4af37"/>`;
  $('figure').innerHTML=s;
 }
-function preview(){const t=TESTS.find(x=>x.id===cur.id),t0=performance.now();cancelAnimationFrame(raf);
- const step=now=>{if(!cur||g0)return;const p=((now-t0)/3200)%1,a=t.demo*(.5-.5*Math.cos(p*2*Math.PI));drawFig(t,a);raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
-
+function preview(){const t=T(cur.id),sl=t.slots.find(x=>x.k===cur.side),t0=performance.now();cancelAnimationFrame(raf);
+ const step=now=>{if(!cur||g0)return;const p=((now-t0)/3200)%1;drawFig(t,t.demo*(.5-.5*Math.cos(p*2*Math.PI)),sl);raf=requestAnimationFrame(step)};raf=requestAnimationFrame(step)}
 function setStep(n){[...$('steps').children].forEach((li,i)=>{li.className=i<n?'ok':i===n?'now':''})}
 
-function onMotion(e){
- const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;
- const v=[a.x,a.y,a.z];g=g?g.map((c,i)=>c*.85+v[i]*.15):v;
- if(g0)update(angleBetween(g,g0));
-}
+function onMotion(e){const a=e.accelerationIncludingGravity;if(!a||a.x==null)return;const v=[a.x,a.y,a.z];g=g?g.map((c,i)=>c*.85+v[i]*.15):v;if(g0)update(angleBetween(g,g0))}
 function angleBetween(p,q){const d=p[0]*q[0]+p[1]*q[1]+p[2]*q[2],n=Math.hypot(...p)*Math.hypot(...q);return n?Math.acos(Math.max(-1,Math.min(1,d/n)))*180/Math.PI:0}
 
 function update(x){
  ang=x;$('angle').textContent=Math.round(x)+'°';
  if(!cur||!g0)return;
- drawFig(TESTS.find(t=>t.id===cur.id),x);
+ const t=T(cur.id);drawFig(t,x,t.slots.find(s=>s.k===cur.side));
  buf.push(x);if(buf.length>40)buf.shift();
  const stable=buf.length>=30&&Math.max(...buf)-Math.min(...buf)<2;
- $('angle').classList.toggle('hold',stable&&x>10);
- if(x>10&&!stable){setStep(2);heldNow=false;$('mState').textContent='Bewegen … am Endpunkt ruhig halten'}
- if(stable&&x>10&&!heldNow){heldNow=true;setStep(3);
-  if(x>best+1){best=x;$('best').textContent=Math.round(best)+'°'}
+ $('angle').classList.toggle('hold',stable&&x>8);
+ if(x>8&&!stable){setStep(2);heldNow=false;$('mState').textContent='Bewegen … am Endpunkt ruhig halten'}
+ if(stable&&x>8&&!heldNow){heldNow=true;if(x>best+1){best=x;$('best').textContent=Math.round(best)+'°'}
   beep();say('Gehalten, '+Math.round(x)+' Grad');$('mState').textContent='Gehalten: '+Math.round(x)+'°. Weiter dehnen oder speichern.';setStep(4)}
 }
 
@@ -184,27 +232,30 @@ async function enableSensors(){
  try{
   if(!window.isSecureContext){$('sensorInfo').textContent='Die Seite muss über https:// geöffnet werden.';return}
   if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-   const p=await DeviceMotionEvent.requestPermission();if(p!=='granted'){$('sensorInfo').textContent='Zugriff abgelehnt. Tab schließen, Safari ganz beenden und neu öffnen. Hilft das nicht: Einstellungen › Safari › Erweitert › Website-Daten, diese Seite löschen.';return}
-  }
+   const p=await DeviceMotionEvent.requestPermission();if(p!=='granted'){$('sensorInfo').textContent='Zugriff abgelehnt. Tab schließen, Safari ganz beenden und neu öffnen. Hilft das nicht: Einstellungen › Safari › Erweitert › Website-Daten, diese Seite löschen.';return}}
   window.addEventListener('devicemotion',onMotion);
   setTimeout(()=>{if(!g&&!demo){$('sensorInfo').textContent='Kein Bewegungssensor gefunden. Bitte auf dem Handy öffnen oder „Demo am PC“ nutzen.';show(['start'])}},1500);
   beep();say('Sensoren aktiv');openList();
  }catch(e){$('sensorInfo').textContent='Fehler: '+e.message}
 }
 
+const fmt=k=>res[k]!=null?Math.round(res[k])+'°':'–';
 function openList(){store();cur=null;cancelAnimationFrame(raf);
- $('tests').innerHTML=TESTS.map(t=>`<div class="test"><div>${t.name}<small>${fmt(t.id,'L')} / ${fmt(t.id,'R')}</small></div><div class="side">${['L','R'].map(s=>`<button data-t="${t.id}" data-s="${s}" class="${res[t.id+s]!=null?'done':''}">${s==='L'?'Links':'Rechts'}</button>`).join('')}</div></div>`).join('')+
- `<div class="row" style="margin-top:12px"><button class="main" id="btnRes">Ergebnis anzeigen</button></div>`;
- $('btnRes').onclick=openResult;
+ const ts=active(),all=ts.flatMap(t=>t.slots.map(s=>t.id+s.k)),done=all.filter(k=>res[k]!=null).length;
+ $('progTxt').textContent=`${done} von ${all.length} Messungen · ${prog==='full'?'Ganzkörper':'Schnelltest'}`;$('progBar').style.width=(all.length?done/all.length*100:0)+'%';
+ let h='',lastPos='';
+ ts.forEach(t=>{if(t.pos!==lastPos){h+=`<h3>${t.pos}</h3>`;lastPos=t.pos}
+  h+=`<div class="test"><div>${t.name}<small>${t.slots.map(s=>fmt(t.id+s.k)).join(' / ')}</small></div><div class="side">${t.slots.map(s=>`<button data-t="${t.id}" data-s="${s.k}" class="${res[t.id+s.k]!=null?'done':''}">${s.l}</button>`).join('')}</div></div>`});
+ h+=`<div class="row" style="margin-top:14px"><button class="main" id="btnRes">Ergebnis anzeigen</button></div>`;
+ $('tests').innerHTML=h;$('btnRes').onclick=openResult;
  $('tests').querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>openMeasure(b.dataset.t,b.dataset.s));
  show(['list']);
 }
-const fmt=(id,s)=>res[id+s]!=null?Math.round(res[id+s])+'°':'–';
 
 function openMeasure(id,side){
- const t=TESTS.find(x=>x.id===id);cur={id,side};g0=null;best=0;buf=[];heldNow=false;
- $('mTitle').textContent=t.name+' · '+(side==='L'?'links':'rechts');
- $('steps').innerHTML=[t.pos,'Nullpunkt setzen: '+t.zero,t.move,'Am Endpunkt ruhig halten, bis es piept.','Speichern.'].map(x=>`<li>${x}</li>`).join('');
+ const t=T(id),sl=t.slots.find(s=>s.k===side);cur={id,side};g0=null;best=0;buf=[];heldNow=false;
+ $('mTitle').textContent=t.name+' · '+(sl.k==='L'?'links':sl.k==='R'?'rechts':sl.l);
+ $('steps').innerHTML=[t.pos2+(sl.where?' '+sl.where:''),'Nullpunkt setzen: '+t.zero,t.move,'Am Endpunkt ruhig halten, bis es piept.','Speichern.'].map(x=>`<li>${x}</li>`).join('');
  setStep(0);$('figTag').textContent='Vorschau: so läuft die Bewegung';$('figTag').className='tag';
  $('best').textContent='–';$('angle').textContent='0°';$('angle').classList.remove('hold');
  $('mState').textContent='Position einnehmen, dann Nullpunkt setzen';
@@ -216,8 +267,7 @@ $('btnZero').onclick=()=>{
  if(demo){g0=[0,0,1]}else{if(!g){$('mState').textContent='Noch keine Sensordaten';return}g0=g.slice()}
  cancelAnimationFrame(raf);buf=[];best=0;heldNow=false;$('best').textContent='–';
  $('figTag').textContent='Live: Figur folgt dem Handy';$('figTag').className='tag live';
- update(0);drawFig(TESTS.find(t=>t.id===cur.id),0);setStep(2);beep(660);say('Nullpunkt gesetzt. Jetzt langsam bewegen.');
- $('mState').textContent='Nullpunkt gesetzt. Jetzt bewegen.';
+ update(0);setStep(2);beep(660);say('Nullpunkt gesetzt. Jetzt langsam bewegen.');$('mState').textContent='Nullpunkt gesetzt. Jetzt bewegen.';
 };
 $('btnSave').onclick=()=>{
  if(!g0){$('mState').textContent='Zuerst Nullpunkt setzen';return}
@@ -228,17 +278,26 @@ $('btnBack').onclick=openList;
 $('demo').oninput=e=>{if(g0)update(+e.target.value)};
 $('btnSensor').onclick=enableSensors;
 $('btnDemo').onclick=()=>{demo=true;say('Demo-Modus');openList()};
+$('pQuick').onclick=()=>setProg('quick');$('pFull').onclick=()=>setProg('full');
 
 function openResult(){
- const rows=TESTS.map(t=>{const l=res[t.id+'L'],r=res[t.id+'R'];let d='–',cls='';
-  if(l!=null&&r!=null){const p=Math.abs(l-r)/Math.max(l,r,1)*100;d=Math.round(p)+' %';cls=p>=15?'warn':'good'}
-  return {n:t.name,l:fmt(t.id,'L'),r:fmt(t.id,'R'),d,cls}});
- $('resTable').innerHTML=`<p class="hint">${esc($('name').value)||'Ohne Namen'} · ${new Date().toLocaleDateString('de-DE')}</p><table><tr><th>Test</th><th>Links</th><th>Rechts</th><th>Diff.</th></tr>${rows.map(x=>`<tr><td>${x.n}</td><td>${x.l}</td><td>${x.r}</td><td class="${x.cls}">${x.d}</td></tr>`).join('')}</table>`;
- $('resTable').dataset.txt=`Mobilitätstest ${$('name').value} ${new Date().toLocaleDateString('de-DE')}\n`+rows.map(x=>`${x.n}: L ${x.l} / R ${x.r} (Diff. ${x.d})`).join('\n');
- show(['result']);
+ const regs=['Wirbelsäule','Halswirbelsäule','Hüfte & Bein','Schulter & Brust'],ts=active(),date=new Date().toLocaleDateString('de-DE');
+ let h=`<p class="hint">${esc($('name').value)||'Ohne Namen'} · ${date}</p>`,txt=`Mobilitätstest ${$('name').value} ${date}\n`;
+ regs.forEach(rg=>{const rs=ts.filter(t=>t.reg===rg);if(!rs.length)return;
+  h+=`<h3>${rg}</h3><table><tr><th>Test</th><th>Links</th><th>Rechts</th><th>Diff.</th></tr>`;txt+=`\n${rg}\n`;
+  rs.forEach(t=>{
+   if(t.id==='lws'){const A=res.lwsA,B=res.lwsB,lws=A!=null&&B!=null?Math.max(0,A-B):null;
+    [['Rumpfbeuge gesamt',A],['davon Hüfte',B],['davon Lendenwirbelsäule',lws]].forEach(([n,v])=>{h+=`<tr><td>${n}</td><td colspan="3">${v!=null?Math.round(v)+'°':'–'}</td></tr>`;txt+=`${n}: ${v!=null?Math.round(v)+'°':'–'}\n`});return}
+   const l=res[t.id+'L'],r=res[t.id+'R'];let d='–',c='';
+   if(l!=null&&r!=null){const p=Math.abs(l-r)/Math.max(l,r,1)*100;d=Math.round(p)+' %';c=p>=15?'warn':'good'}
+   h+=`<tr><td>${t.name}</td><td>${fmt(t.id+'L')}</td><td>${fmt(t.id+'R')}</td><td class="${c}">${d}</td></tr>`;
+   txt+=`${t.name}: L ${fmt(t.id+'L')} / R ${fmt(t.id+'R')} (Diff. ${d})\n`});
+  h+='</table>'});
+ $('resTable').innerHTML=h;$('resTable').dataset.txt=txt;show(['result']);
 }
 const esc=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 $('btnCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('resTable').dataset.txt);$('copyMsg').textContent='Kopiert'}catch(e){$('copyMsg').textContent='Kopieren nicht möglich'}};
+$('btnList').onclick=openList;
 $('btnReset').onclick=()=>{res={};$('name').value='';store();show(['start'])};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)store()});
 }
